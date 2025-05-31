@@ -263,7 +263,7 @@ class DMC(nn.Module):
         y_hat, y_likelihoods = self.gaussian_conditional(y, params)
 
         feature = self.decoder(y_hat, ctx, q_decoder)
-        x_hat = self.recon_generation_net(feature, q_recon).clamp_(0, 1)
+        x_hat = self.recon_generation_net(feature, q_recon)
 
         return x_hat, y_hat, y_likelihoods, z_hat, z_likelihoods, feature
 
@@ -322,6 +322,6 @@ class DMC(nn.Module):
         y_hat = self.gaussian_conditional.decompress(y_strings, indexes, z_hat.dtype)
         
         feature = self.decoder(y_hat, ctx, q_decoder)
-        x_hat = self.recon_generation_net(feature, q_recon).clamp_(0, 1)
+        x_hat = self.recon_generation_net(feature, q_recon)
 
         return x_hat, feature
