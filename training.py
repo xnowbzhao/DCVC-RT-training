@@ -77,34 +77,34 @@ def train_one_epoch(i_frame_model, p_frame_model, dataset):
         q = random.randint(1, 63) 
 
         # I frame training
-
+        i_frame_model.train()
+        p_frame_model.train()
         recon=None
         feature=None
         loss=0
         optimizer.zero_grad()
         for i in range(0,8):
-            i_frame_model.train()
-            p_frame_model.train()
+
             if i==0:
                 x_hat, y_hat, y_likelihoods, z_hat, z_likelihoods = i_frame_model.forward(batch[:, 0], q)
             elif i==1:
-                x_hat, y_hat, y_likelihoods, z_hat, z_likelihoods, _ = p_frame_model.forward(batch[:, i], recon.to('cuda:0'), None, q)
+                x_hat, y_hat, y_likelihoods, z_hat, z_likelihoods, feature = p_frame_model.forward(batch[:, i], x_hat.to('cuda:0'), None, q)
             else:
-                x_hat, y_hat, y_likelihoods, z_hat, z_likelihoods, _  = p_frame_model.forward(batch[:, i], None, feature.to('cuda:0'), q)
+                x_hat, y_hat, y_likelihoods, z_hat, z_likelihoods, feature  = p_frame_model.forward(batch[:, i], None, feature.to('cuda:0'), q)
                 
             loss1 = get_bpp(y_hat, y_likelihoods) + get_bpp(z_hat, z_likelihoods) 
-            loss2 = get_distortion(batch[:, 0], x_hat, mse)
+            loss2 = get_distortion(batch[:, i], x_hat, mse)
             loss += q_index_to_lambda[q] * loss2 * weights[i] + loss1
-            with torch.no_grad():
-                if i==0:
-                    i_frame_model.eval()
-                    recon, _, _, _, _ = i_frame_model.forward(batch[:, 0], q)
-                elif i==1:
-                    p_frame_model.eval()
-                    _, _, _, _, _, feature = p_frame_model.forward(batch[:, i], recon.to('cuda:0'), None, q)
-                else:
-                    p_frame_model.eval()
-                    _, _, _, _, _, feature = p_frame_model.forward(batch[:, i], None, feature.to('cuda:0'), q)
+            #with torch.no_grad():
+            #    if i==0:
+            #        i_frame_model.eval()
+            #        recon, _, _, _, _ = i_frame_model.forward(batch[:, 0], q)
+            #    elif i==1:
+            #        p_frame_model.eval()
+            #        _, _, _, _, _, feature = p_frame_model.forward(batch[:, i], recon.to('cuda:0'), None, q)
+            #    else:
+            #        p_frame_model.eval()
+            #        _, _, _, _, _, feature = p_frame_model.forward(batch[:, i], None, feature.to('cuda:0'), q)
 
         loss /= 8;
         
@@ -137,9 +137,9 @@ def test_one_epoch(i_frame_model, p_frame_model, dataset, epoch):
                 else:
                     recon, y_hat, y_likelihoods, z_hat, z_likelihoods, feature  = p_frame_model.forward(batch[:, i], None, feature.to('cuda:0'), q)
 
-
                 avgbpp += get_bpp(y_hat, y_likelihoods) + get_bpp(z_hat, z_likelihoods) 
-                avgmse += get_distortion(batch[:, 0], recon, mse)
+                avgmse += get_distortion(batch[:, i], recon, mse)
+
     avgbpp/=len(dataset)
     avgmse/=len(dataset)
     torch.save(i_frame_model.state_dict(), 'logs/i-Ep{}-dev{:.3f}-{:.3f}.pth'.format(epoch + 1, avgbpp, avgmse))
@@ -155,8 +155,8 @@ if __name__ == '__main__':
     Init_Epoch = 0
     Fin_Epoch = 200
     device = "cuda"
-    train_dataset = Dataset('videos/train_clip')
-    test_dataset = Dataset('videos/test_clip')
+    train_dataset = Dataset('/media/xnozero/e/medimage/videos/train_clip')
+    test_dataset = Dataset('/media/xnozero/e/medimage/videos/test_clip')
     train_dataloader = DataLoader(
         train_dataset,
         batch_size=Batch_size,
