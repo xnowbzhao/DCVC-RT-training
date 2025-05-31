@@ -160,7 +160,7 @@ class DMCI(nn.Module):
 
         y_hat, y_likelihoods = self.gaussian_conditional(y, params)
         
-        x_hat = self.dec(y_hat, curr_q_dec).clamp_(0, 1)
+        x_hat = self.dec(y_hat, curr_q_dec)
         
         return  x_hat,y_hat, y_likelihoods, z_hat, z_likelihoods
 
@@ -202,6 +202,6 @@ class DMCI(nn.Module):
         
         y_hat = self.gaussian_conditional.decompress(y_strings, indexes, z_hat.dtype)
         
-        x_hat = self.dec(y_hat, curr_q_dec).clamp_(0, 1)
+        x_hat = self.dec(y_hat, curr_q_dec)
         
         return x_hat
