@@ -77,14 +77,14 @@ def train_one_epoch(i_frame_model, p_frame_model, dataset):
         q = random.randint(1, 63) 
 
         # I frame training
-        i_frame_model.train()
-        p_frame_model.train()
+
         recon=None
         feature=None
         loss=0
         optimizer.zero_grad()
         for i in range(0,8):
-
+            i_frame_model.train()
+            p_frame_model.train()
             if i==0:
                 x_hat, y_hat, y_likelihoods, z_hat, z_likelihoods = i_frame_model.forward(batch[:, 0], q)
             elif i==1:
