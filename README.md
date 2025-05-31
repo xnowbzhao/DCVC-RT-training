@@ -2,7 +2,7 @@
 
 This is a third-party implementation of the training code for the paper  
 **"DCVC-RT: Towards Practical Real-Time Neural Video Compression"**.  
-Note: This implementation is **not compatible** with the original version, as it was adapted specifically for **medical image compression**.
+Note: This implementation is **not compatible** with the original version, as it was adapted specifically for **medical video compression**.
 
 ## Key Modifications
 
