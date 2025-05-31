@@ -13,8 +13,8 @@ from compressai.entropy_models import EntropyBottleneck, GaussianConditional
 
 g_ch_src_d = 8 * 8
 g_ch_recon = 128
-g_ch_y = 32
-g_ch_z = 32
+g_ch_y = 64
+g_ch_z = 64
 g_ch_d = 128
 
 class FeatureExtractor(nn.Module):
@@ -241,11 +241,11 @@ class DMC(nn.Module):
         q_recon = self.q_recon[qp:qp+1, :, :, :]
 
         if recon is None:
-            feature=self.feature_p(p_feature)
+            f_feature=self.feature_p(p_feature)
         else:
-            feature=self.feature_i(recon)
+            f_feature=self.feature_i(recon)
 
-        ctx, ctx_t = self.feature_extractor(feature, q_feature)
+        ctx, ctx_t = self.feature_extractor(f_feature, q_feature)
 
         y = self.encoder(x, ctx, q_encoder)
 
@@ -263,7 +263,7 @@ class DMC(nn.Module):
         y_hat, y_likelihoods = self.gaussian_conditional(y, params)
 
         feature = self.decoder(y_hat, ctx, q_decoder)
-        x_hat = self.recon_generation_net(feature, q_recon)
+        x_hat = self.recon_generation_net(feature, q_recon)#.clamp_(0, 1)
 
         return x_hat, y_hat, y_likelihoods, z_hat, z_likelihoods, feature
 
@@ -282,10 +282,11 @@ class DMC(nn.Module):
         y = self.encoder(x, ctx, q_encoder)
         hyper_inp = pad_for_y(y)
         z = self.hyper_encoder(hyper_inp)
-        
+
         z_strings = self.entropy_bottleneck.compress(z)
+
         z_hat = self.entropy_bottleneck.decompress(z_strings, z.size()[-2:])
-        
+
         params = self.res_prior_param_decoder(z_hat, ctx_t)
 
         _, _, yH, yW = y.shape
@@ -294,8 +295,9 @@ class DMC(nn.Module):
         
         y_strings = self.gaussian_conditional.compress(y, indexes)
         
-        y_hat, y_likelihoods = self.gaussian_conditional(y, params)
-        
+        #y_hat, y_likelihoods = self.gaussian_conditional(y, params)
+        y_hat = self.gaussian_conditional.decompress(y_strings, indexes, z_hat.dtype)
+
         feature = self.decoder(y_hat, ctx, q_decoder)
 
         return y_strings, z_strings, feature, z.size()[-2:], y.shape
@@ -322,6 +324,6 @@ class DMC(nn.Module):
         y_hat = self.gaussian_conditional.decompress(y_strings, indexes, z_hat.dtype)
         
         feature = self.decoder(y_hat, ctx, q_decoder)
-        x_hat = self.recon_generation_net(feature, q_recon)
+        x_hat = self.recon_generation_net(feature, q_recon)#.clamp_(0, 1)
 
         return x_hat, feature
